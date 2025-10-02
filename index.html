@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Jardineiro.AI - Seu Mentor de Plantas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap" rel="stylesheet" />
+    <style>
+        body { font-family: 'Poppins', sans-serif; overflow: hidden; background-color: #111; }
+        video, canvas { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: 0; }
+        canvas { display: none; }
+        #ui-container { position: fixed; bottom: 0; left: 0; width: 100%; z-index: 2; color: white; background: linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0)); }
+        #output-panel { background: rgba(10, 20, 10, 0.9); backdrop-filter: blur(5px); max-height: 85vh; overflow-y: auto; }
+        .result-card { padding: 20px; }
+        .diagnosis-section { background-color: rgba(255, 200, 200, 0.1); border: 1px solid #ef4444; padding: 15px; border-radius: 8px; margin-top: 15px; }
+        .plan-step { border-left: 3px solid #22c55e; padding-left: 15px; margin-bottom: 15px; }
+        .disclaimer { font-size: 0.8rem; text-align: center; opacity: 0.7; padding: 10px; }
+        /* Estilo para os botões de rádio */
+        .analysis-options { display: flex; justify-content: center; gap: 10px; margin-bottom: 15px; }
+        .analysis-options input { display: none; }
+        .analysis-options label {
+            padding: 8px 16px; border: 1px solid #4ade80; color: #4ade80; border-radius: 50px; cursor: pointer; transition: all 0.2s;
+        }
+        .analysis-options input:checked + label { background-color: #4ade80; color: #111; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <video id="video" autoplay playsinline muted></video>
+    <canvas id="canvas"></canvas>
+    <div id="ui-container">
+        <div id="output-panel" style="display:none;"></div>
+        <div id="controls" class="p-4 text-center">
+            <div class="analysis-options">
+                <input type="radio" id="identificacao" name="analysis_type" value="identificacao" checked>
+                <label for="identificacao">🌿 Identificar</label>
+                <input type="radio" id="diagnostico" name="analysis_type" value="diagnostico">
+                <label for="diagnostico">🩺 Diagnosticar</label>
+            </div>
+            <button id="captureBtn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-6 rounded-full shadow-lg transition-transform transform hover:scale-105">Analisar Planta</button>
+        </div>
+    </div>
+
+    <script>
+        const video = document.getElementById("video");
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+        const outputPanel = document.getElementById("output-panel");
+        const controlsDiv = document.getElementById("controls");
+        const captureBtn = document.getElementById("captureBtn");
+        
+        async function startCamera() { try { const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } } }); video.srcObject = stream; } catch (err) { alert("Erro ao acessar a câmera."); } }
+
+        function resetUI() {
+            canvas.style.display = 'none';
+            video.style.display = 'block';
+            outputPanel.style.display = 'none';
+            outputPanel.innerHTML = '';
+            controlsDiv.style.display = 'block';
+            captureBtn.disabled = false;
+        }
+
+        captureBtn.addEventListener('click', async () => {
+            captureBtn.disabled = true;
+            
+            const MAX_WIDTH = 1024;
+            const scale = MAX_WIDTH / video.videoWidth;
+            canvas.width = MAX_WIDTH;
+            canvas.height = video.videoHeight * scale;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            video.style.display = 'none';
+            canvas.style.display = 'block';
+            controlsDiv.style.display = 'none';
+
+            outputPanel.innerHTML = `<div class="p-6 text-center">Analisando sua planta... 🔎</div>`;
+            outputPanel.style.display = 'block';
+
+            try {
+                const imageDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+                const analysis_type = document.querySelector('input[name="analysis_type"]:checked').value;
+
+                const response = await fetch('/api/analyze-plant', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: imageDataUrl, analysis_type }),
+                });
+
+                if (!response.ok) throw new Error(`Erro na API: ${response.statusText}`);
+                const data = await response.json();
+                renderResults(data);
+
+            } catch (error) {
+                outputPanel.innerHTML = `<div class="p-6 text-center text-red-400">❌ Ocorreu um erro. Tente novamente.</div>`;
+                setTimeout(resetUI, 3000);
+            }
+        });
+
+        function renderResults(data) {
+            let diagnosisHTML = '';
+            if (data.diagnostico) {
+                diagnosisHTML = `
+                    <div class="diagnosis-section">
+                        <h3 class="font-bold text-lg text-red-400">Diagnóstico do Problema</h3>
+                        <p><strong>Problema:</strong> ${data.diagnostico.problema}</p>
+                        <p><strong>Causa Provável:</strong> ${data.diagnostico.causa_provavel}</p>
+                        <p><strong>Sintomas Visíveis:</strong> ${data.diagnostico.sintomas_visiveis}</p>
+                    </div>
+                `;
+            }
+
+            const actionPlanHTML = data.plano_de_acao.passos.map(step => `
+                <div class="plan-step">
+                    <h4 class="font-bold text-green-400">${step.titulo}</h4>
+                    <p class="text-sm">${step.instrucao}</p>
+                </div>
+            `).join('');
+
+            const html = `
+                <div class="result-card">
+                    <h2 class="text-2xl font-bold">${data.identificacao.nome_popular}</h2>
+                    <p class="italic opacity-80 mb-2">${data.identificacao.nome_cientifico}</p>
+                    <p class="mb-4">${data.identificacao.descricao}</p>
+                    
+                    <div class="mb-4">
+                        <strong class="text-lg">Saúde:</strong>
+                        <span class="font-bold ${data.saude.status === 'Saudável' ? 'text-green-400' : 'text-red-400'}">${data.saude.status}</span>
+                        <p class="text-sm opacity-90">${data.saude.observacao}</p>
+                    </div>
+
+                    ${diagnosisHTML}
+
+                    <h3 class="text-xl font-bold mt-6 mb-4">${data.plano_de_acao.titulo}</h3>
+                    ${actionPlanHTML}
+                    
+                    <p class="disclaimer">${data.disclaimer}</p>
+                </div>
+                <div class="p-4"><button onclick="resetUI()" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-full">Analisar Outra Planta</button></div>
+            `;
+            
+            outputPanel.innerHTML = html;
+        }
+
+        startCamera();
+    </script>
+</body>
+</html>

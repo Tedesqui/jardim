@@ -1,0 +1,9 @@
+{
+    "name": "jardineiro-ai-backend",
+    "version": "1.0.0",
+    "private": true,
+    "description": "Backend para o 'Médico' de Plantas e Mentor de Jardinagem com IA",
+    "dependencies": {
+        "openai": "^4.0.0"
+    }
+}
