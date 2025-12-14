@@ -7,37 +7,55 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap" rel="stylesheet" />
     <style>
-        body { font-family: 'Poppins', sans-serif; overflow: hidden; background-color: #111; }
-        video, canvas { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: 0; }
-        canvas { display: none; }
-        #ui-container { position: fixed; bottom: 0; left: 0; width: 100%; z-index: 2; color: white; background: linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0)); }
-        #output-panel { background: rgba(10, 20, 10, 0.9); backdrop-filter: blur(5px); max-height: 85vh; overflow-y: auto; }
-        .result-card { padding: 20px; }
-        .diagnosis-section { background-color: rgba(255, 200, 200, 0.1); border: 1px solid #ef4444; padding: 15px; border-radius: 8px; margin-top: 15px; }
+        body { font-family: 'Poppins', sans-serif; overflow: hidden; background-color: #111; color: white; }
+        
+        /* Otimização para Câmera no Android */
+        video { 
+            position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: 0; 
+            opacity: 0; transition: opacity 0.5s ease-in-out; /* Fade-in suave */
+        }
+        /* Remove botão de play nativo */
+        video::-webkit-media-controls { display: none !important; }
+        video::-webkit-media-controls-start-playback-button { display: none !important; -webkit-appearance: none; }
+
+        canvas { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: 0; display: none; }
+        
+        #ui-container { position: fixed; bottom: 0; left: 0; width: 100%; z-index: 2; background: linear-gradient(to top, rgba(0,0,0,0.9), rgba(0,0,0,0)); }
+        #output-panel { background: rgba(10, 20, 10, 0.95); backdrop-filter: blur(5px); max-height: 85vh; overflow-y: auto; border-top-left-radius: 20px; border-top-right-radius: 20px; }
+        
+        .result-card { padding: 25px; }
+        .diagnosis-section { background-color: rgba(220, 38, 38, 0.1); border: 1px solid #ef4444; padding: 15px; border-radius: 12px; margin-top: 15px; }
         .plan-step { border-left: 3px solid #22c55e; padding-left: 15px; margin-bottom: 15px; }
-        .disclaimer { font-size: 0.8rem; text-align: center; opacity: 0.7; padding: 10px; }
-        /* Estilo para os botões de rádio */
-        .analysis-options { display: flex; justify-content: center; gap: 10px; margin-bottom: 15px; }
+        .disclaimer { font-size: 0.75rem; text-align: center; opacity: 0.6; padding: 20px 10px; }
+        
+        /* Botões de rádio estilizados */
+        .analysis-options { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
         .analysis-options input { display: none; }
         .analysis-options label {
-            padding: 8px 16px; border: 1px solid #4ade80; color: #4ade80; border-radius: 50px; cursor: pointer; transition: all 0.2s;
+            padding: 10px 20px; border: 1px solid #4ade80; color: #4ade80; border-radius: 50px; cursor: pointer; transition: all 0.2s; font-size: 0.9rem;
         }
-        .analysis-options input:checked + label { background-color: #4ade80; color: #111; font-weight: 600; }
+        .analysis-options input:checked + label { background-color: #4ade80; color: #064e3b; font-weight: 700; box-shadow: 0 0 10px rgba(74, 222, 128, 0.5); }
     </style>
 </head>
 <body>
     <video id="video" autoplay playsinline muted></video>
     <canvas id="canvas"></canvas>
+    
     <div id="ui-container">
         <div id="output-panel" style="display:none;"></div>
-        <div id="controls" class="p-4 text-center">
+        
+        <div id="controls" class="p-6 text-center">
             <div class="analysis-options">
                 <input type="radio" id="identificacao" name="analysis_type" value="identificacao" checked>
                 <label for="identificacao">🌿 Identificar</label>
+                
                 <input type="radio" id="diagnostico" name="analysis_type" value="diagnostico">
-                <label for="diagnostico">🩺 Diagnosticar</label>
+                <label for="diagnostico">🩺 Diagnosticar Doença</label>
             </div>
-            <button id="captureBtn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-6 rounded-full shadow-lg transition-transform transform hover:scale-105">Analisar Planta</button>
+            
+            <button id="captureBtn" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-6 rounded-full shadow-lg transition-transform transform active:scale-95 text-lg">
+                📸 Analisar Planta
+            </button>
         </div>
     </div>
 
@@ -49,7 +67,16 @@
         const controlsDiv = document.getElementById("controls");
         const captureBtn = document.getElementById("captureBtn");
         
-        async function startCamera() { try { const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } } }); video.srcObject = stream; } catch (err) { alert("Erro ao acessar a câmera."); } }
+        async function startCamera() { 
+            try { 
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } } 
+                }); 
+                video.srcObject = stream;
+                // Só mostra o vídeo quando estiver pronto (evita tela preta/play)
+                video.onloadedmetadata = () => { video.style.opacity = 1; };
+            } catch (err) { alert("Erro ao acessar a câmera. Verifique as permissões."); } 
+        }
 
         function resetUI() {
             canvas.style.display = 'none';
@@ -58,6 +85,7 @@
             outputPanel.innerHTML = '';
             controlsDiv.style.display = 'block';
             captureBtn.disabled = false;
+            setTimeout(() => { video.style.opacity = 1; }, 100);
         }
 
         captureBtn.addEventListener('click', async () => {
@@ -70,10 +98,11 @@
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
             
             video.style.display = 'none';
+            video.style.opacity = 0;
             canvas.style.display = 'block';
             controlsDiv.style.display = 'none';
 
-            outputPanel.innerHTML = `<div class="p-6 text-center">Analisando sua planta... 🔎</div>`;
+            outputPanel.innerHTML = `<div class="p-10 text-center"><p class="text-2xl animate-pulse">🍃</p><p class="mt-4 text-green-300">Consultando o especialista...</p></div>`;
             outputPanel.style.display = 'block';
 
             try {
@@ -86,25 +115,25 @@
                     body: JSON.stringify({ image: imageDataUrl, analysis_type }),
                 });
 
-                if (!response.ok) throw new Error(`Erro na API: ${response.statusText}`);
+                if (!response.ok) throw new Error(`Erro na API`);
                 const data = await response.json();
                 renderResults(data);
 
             } catch (error) {
-                outputPanel.innerHTML = `<div class="p-6 text-center text-red-400">❌ Ocorreu um erro. Tente novamente.</div>`;
-                setTimeout(resetUI, 3000);
+                outputPanel.innerHTML = `<div class="p-6 text-center text-red-400"><p class="text-xl">🍂</p><p>Não consegui analisar. Tente aproximar mais.</p><button onclick="resetUI()" class="mt-4 text-sm underline">Tentar novamente</button></div>`;
             }
         });
 
         function renderResults(data) {
             let diagnosisHTML = '';
-            if (data.diagnostico) {
+            // Se tiver diagnóstico E indicar problema, mostra a caixa vermelha
+            if (data.diagnostico && data.saude.status !== 'Saudável') {
                 diagnosisHTML = `
                     <div class="diagnosis-section">
-                        <h3 class="font-bold text-lg text-red-400">Diagnóstico do Problema</h3>
-                        <p><strong>Problema:</strong> ${data.diagnostico.problema}</p>
-                        <p><strong>Causa Provável:</strong> ${data.diagnostico.causa_provavel}</p>
-                        <p><strong>Sintomas Visíveis:</strong> ${data.diagnostico.sintomas_visiveis}</p>
+                        <h3 class="font-bold text-lg text-red-400 mb-2">⚠️ Diagnóstico</h3>
+                        <p class="mb-1"><strong class="text-white">Problema:</strong> ${data.diagnostico.problema}</p>
+                        <p class="mb-1"><strong class="text-white">Causa:</strong> ${data.diagnostico.causa_provavel}</p>
+                        <p class="text-sm opacity-80">${data.diagnostico.sintomas_visiveis}</p>
                     </div>
                 `;
             }
@@ -112,30 +141,36 @@
             const actionPlanHTML = data.plano_de_acao.passos.map(step => `
                 <div class="plan-step">
                     <h4 class="font-bold text-green-400">${step.titulo}</h4>
-                    <p class="text-sm">${step.instrucao}</p>
+                    <p class="text-sm text-gray-200">${step.instrucao}</p>
                 </div>
             `).join('');
 
             const html = `
                 <div class="result-card">
-                    <h2 class="text-2xl font-bold">${data.identificacao.nome_popular}</h2>
-                    <p class="italic opacity-80 mb-2">${data.identificacao.nome_cientifico}</p>
-                    <p class="mb-4">${data.identificacao.descricao}</p>
+                    <h2 class="text-3xl font-bold text-green-400 leading-tight">${data.identificacao.nome_popular}</h2>
+                    <p class="italic text-gray-400 mb-4 text-sm">${data.identificacao.nome_cientifico}</p>
                     
-                    <div class="mb-4">
-                        <strong class="text-lg">Saúde:</strong>
-                        <span class="font-bold ${data.saude.status === 'Saudável' ? 'text-green-400' : 'text-red-400'}">${data.saude.status}</span>
-                        <p class="text-sm opacity-90">${data.saude.observacao}</p>
+                    <p class="mb-6 text-gray-100 leading-relaxed">${data.identificacao.descricao}</p>
+                    
+                    <div class="flex items-center gap-3 mb-6 bg-gray-800 p-3 rounded-lg">
+                        <div class="text-2xl">${data.saude.status === 'Saudável' ? '💚' : '🥀'}</div>
+                        <div>
+                            <p class="text-xs text-gray-400 uppercase tracking-wider">Estado de Saúde</p>
+                            <p class="font-bold ${data.saude.status === 'Saudável' ? 'text-green-400' : 'text-red-400'}">${data.saude.status}</p>
+                        </div>
                     </div>
 
                     ${diagnosisHTML}
 
-                    <h3 class="text-xl font-bold mt-6 mb-4">${data.plano_de_acao.titulo}</h3>
+                    <h3 class="text-xl font-bold mt-8 mb-4 border-b border-gray-700 pb-2">📝 Plano de Cuidados</h3>
                     ${actionPlanHTML}
                     
                     <p class="disclaimer">${data.disclaimer}</p>
+                    
+                    <button onclick="resetUI()" class="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-4 rounded-full mt-2 transition-colors">
+                        📷 Analisar Outra Planta
+                    </button>
                 </div>
-                <div class="p-4"><button onclick="resetUI()" class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-4 rounded-full">Analisar Outra Planta</button></div>
             `;
             
             outputPanel.innerHTML = html;
