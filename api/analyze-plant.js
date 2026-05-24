@@ -4,16 +4,32 @@ const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
 
+// Mapa de idiomas suportados
+const languageMap = {
+    "pt": "Português do Brasil",
+    "en": "Inglês",
+    "es": "Espanhol",
+    "de": "Alemão",
+    "fr": "Francês",
+    "it": "Italiano",
+    "zh": "Chinês",
+    "ko": "Coreano",
+    "ja": "Japonês"
+};
+
 export default async function handler(request, response) {
     try {
         if (request.method !== 'POST') {
             return response.status(405).json({ error: 'Method Not Allowed' });
         }
 
-        const { image, analysis_type } = request.body;
+        const { image, analysis_type, language } = request.body;
         if (!image || !analysis_type) {
             return response.status(400).json({ error: 'Imagem e tipo de análise são obrigatórios.' });
         }
+
+        // Define o idioma alvo (se não encontrar, o padrão será Inglês)
+        const targetLanguage = languageMap[language] || "Inglês";
 
         const prompt = `
         Você é 'Jasmim', uma engenheira agrônoma e especialista em jardinagem tropical, com profundo conhecimento do clima da Costa Verde do Brasil (quente e úmido). Sua tarefa é analisar a imagem de uma planta enviada por um usuário.
@@ -28,44 +44,44 @@ export default async function handler(request, response) {
 
         **Contexto Climático:** Lembre-se que as recomendações de rega e cuidado devem ser adequadas para um clima tropical quente e úmido como o de Angra dos Reis.
 
+        🚨 INSTRUÇÃO CRÍTICA DE IDIOMA 🚨:
+        Você DEVE escrever todos os textos de resposta (os VALORES do JSON) exclusivamente no idioma: ${targetLanguage}.
+        No entanto, as CHAVES do objeto JSON devem permanecer estritamente em português, exatamente como no modelo abaixo, para que o sistema consiga ler os dados.
+
         Formate sua resposta final estritamente como um único objeto JSON com a seguinte estrutura:
         {
           "identificacao": {
-            "nome_popular": "Nome Popular da Planta",
+            "nome_popular": "Nome Popular da Planta (em ${targetLanguage})",
             "nome_cientifico": "Nome Científico da Planta",
-            "descricao": "Uma breve descrição da planta."
+            "descricao": "Uma breve descrição da planta (em ${targetLanguage})."
           },
           "saude": {
-            "status": "Saudável" ou "Com Problemas",
-            "observacao": "Uma frase sobre a aparência geral da planta."
+            "status": "Traduza 'Saudável' ou 'Com Problemas' para ${targetLanguage}",
+            "observacao": "Uma frase sobre a aparência geral da planta (em ${targetLanguage})."
           },
-          "diagnostico": { // Inclua esta chave APENAS se a saúde for "Com Problemas"
-            "problema": "Nome do problema (ex: Ataque de Cochonilhas)",
-            "causa_provavel": "Descrição da causa (ex: Excesso de umidade e pouca ventilação)",
-            "sintomas_visiveis": "O que você viu na foto (ex: Manchas brancas algodonosas nos caules)"
+          "diagnostico": { // Inclua esta chave APENAS se a saúde não for saudável
+            "problema": "Nome do problema (em ${targetLanguage})",
+            "causa_provavel": "Descrição da causa (em ${targetLanguage})",
+            "sintomas_visiveis": "O que você viu na foto (em ${targetLanguage})"
           },
           "plano_de_acao": {
-            "titulo": "Plano de Cuidados" ou "Plano de Tratamento",
+            "titulo": "Traduza 'Plano de Cuidados' ou 'Plano de Tratamento' para ${targetLanguage}",
             "passos": [
               {
-                "titulo": "Rega",
-                "instrucao": "Instruções detalhadas de rega para o clima local."
+                "titulo": "Traduza 'Rega' para ${targetLanguage}",
+                "instrucao": "Instruções detalhadas de rega (em ${targetLanguage})."
               },
               {
-                "titulo": "Luminosidade",
-                "instrucao": "Instruções sobre a necessidade de luz da planta."
+                "titulo": "Traduza 'Luminosidade' para ${targetLanguage}",
+                "instrucao": "Instruções sobre a luz (em ${targetLanguage})."
               },
               {
-                "titulo": "Adubação",
-                "instrucao": "Recomendações de adubação."
-              },
-              { // Inclua este passo APENAS se houver um tratamento
-                "titulo": "Tratamento Específico",
-                "instrucao": "Passos detalhados para tratar o problema diagnosticado."
+                "titulo": "Traduza 'Adubação' para ${targetLanguage}",
+                "instrucao": "Recomendações de adubação (em ${targetLanguage})."
               }
             ]
           },
-          "disclaimer": "Lembre-se que esta é uma análise por IA. Para casos graves, sempre consulte um agrônomo ou especialista local."
+          "disclaimer": "Traduza o seguinte aviso para ${targetLanguage}: 'Lembre-se que esta é uma análise por IA. Para casos graves, sempre consulte um agrônomo ou especialista local.'"
         }
         `;
 
