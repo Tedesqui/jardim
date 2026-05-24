@@ -41,16 +41,26 @@
     <video id="video" autoplay playsinline muted></video>
     <canvas id="canvas"></canvas>
     
+    <!-- INTEGRAÇÃO PREMIUM - Botão flutuante no topo -->
+    <div class="absolute top-4 right-4 z-50">
+        <a href="jardim://assinar" id="btn-premium" class="bg-yellow-500 hover:bg-yellow-400 text-yellow-900 text-xs font-bold px-4 py-2 rounded-full shadow-lg transition-colors duration-300">
+            Assinar Premium
+        </a>
+        <div id="premium-success" class="hidden bg-green-500 text-white text-xs font-bold px-4 py-2 rounded-full shadow-lg">
+            Premium ✓
+        </div>
+    </div>
+
     <div id="ui-container">
         <div id="output-panel" style="display:none;"></div>
         
         <div id="controls" class="p-6 text-center">
             <div class="analysis-options">
                 <input type="radio" id="identificacao" name="analysis_type" value="identificacao" checked>
-                <label for="identificacao">🌿 Identificar</label>
+                <label id="lbl-identificacao" for="identificacao">🌿 Identificar</label>
                 
                 <input type="radio" id="diagnostico" name="analysis_type" value="diagnostico">
-                <label for="diagnostico">🩺 Diagnosticar Doença</label>
+                <label id="lbl-diagnostico" for="diagnostico">🩺 Diagnosticar Doença</label>
             </div>
             
             <button id="captureBtn" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-6 rounded-full shadow-lg transition-transform transform active:scale-95 text-lg">
@@ -60,6 +70,192 @@
     </div>
 
     <script>
+        // --- DICIONÁRIO DE IDIOMAS (8 Idiomas + PT) ---
+        const i18n = {
+            "pt": {
+                identify: "🌿 Identificar",
+                diagnose: "🩺 Diagnosticar Doença",
+                captureBtn: "📸 Analisar Planta",
+                loading: "Consultando o especialista...",
+                errorMsg: "Não consegui analisar. Tente aproximar mais.",
+                retryBtn: "Tentar novamente",
+                diagnosisTitle: "⚠️ Diagnóstico",
+                problemLabel: "Problema:",
+                causeLabel: "Causa:",
+                healthStatusLabel: "Estado de Saúde",
+                carePlanTitle: "📝 Plano de Cuidados",
+                analyzeAnotherBtn: "📷 Analisar Outra Planta",
+                premiumBtnBase: "Assinar Premium",
+                premiumSuccess: "Premium Confirmado!"
+            },
+            "en": {
+                identify: "🌿 Identify",
+                diagnose: "🩺 Diagnose Disease",
+                captureBtn: "📸 Analyze Plant",
+                loading: "Consulting the expert...",
+                errorMsg: "Couldn't analyze. Try getting closer.",
+                retryBtn: "Try again",
+                diagnosisTitle: "⚠️ Diagnosis",
+                problemLabel: "Problem:",
+                causeLabel: "Cause:",
+                healthStatusLabel: "Health Status",
+                carePlanTitle: "📝 Care Plan",
+                analyzeAnotherBtn: "📷 Analyze Another Plant",
+                premiumBtnBase: "Subscribe Premium",
+                premiumSuccess: "Premium Confirmed!"
+            },
+            "es": {
+                identify: "🌿 Identificar",
+                diagnose: "🩺 Diagnosticar Enf.",
+                captureBtn: "📸 Analizar Planta",
+                loading: "Consultando al experto...",
+                errorMsg: "No pude analizar. Acércate más.",
+                retryBtn: "Intentar de nuevo",
+                diagnosisTitle: "⚠️ Diagnóstico",
+                problemLabel: "Problema:",
+                causeLabel: "Causa:",
+                healthStatusLabel: "Estado de Salud",
+                carePlanTitle: "📝 Plan de Cuidados",
+                analyzeAnotherBtn: "📷 Analizar Otra Planta",
+                premiumBtnBase: "Suscribirse Premium",
+                premiumSuccess: "¡Premium Confirmado!"
+            },
+            "de": {
+                identify: "🌿 Identifizieren",
+                diagnose: "🩺 Krankheit Diagnostizieren",
+                captureBtn: "📸 Pflanze Analysieren",
+                loading: "Experten konsultieren...",
+                errorMsg: "Analyse fehlgeschlagen. Gehen Sie näher heran.",
+                retryBtn: "Erneut versuchen",
+                diagnosisTitle: "⚠️ Diagnose",
+                problemLabel: "Problem:",
+                causeLabel: "Ursache:",
+                healthStatusLabel: "Gesundheitszustand",
+                carePlanTitle: "📝 Pflegeplan",
+                analyzeAnotherBtn: "📷 Andere Pflanze",
+                premiumBtnBase: "Premium Abonnieren",
+                premiumSuccess: "Premium Bestätigt!"
+            },
+            "fr": {
+                identify: "🌿 Identifier",
+                diagnose: "🩺 Diagnostiquer",
+                captureBtn: "📸 Analyser la Plante",
+                loading: "Consultation de l'expert...",
+                errorMsg: "Impossible d'analyser. Rapprochez-vous.",
+                retryBtn: "Réessayer",
+                diagnosisTitle: "⚠️ Diagnostic",
+                problemLabel: "Problème:",
+                causeLabel: "Cause:",
+                healthStatusLabel: "État de Santé",
+                carePlanTitle: "📝 Plan de Soins",
+                analyzeAnotherBtn: "📷 Analyser une Autre",
+                premiumBtnBase: "S'abonner Premium",
+                premiumSuccess: "Premium Confirmé!"
+            },
+            "it": {
+                identify: "🌿 Identifica",
+                diagnose: "🩺 Diagnostica Malattia",
+                captureBtn: "📸 Analizza Pianta",
+                loading: "Consultando l'esperto...",
+                errorMsg: "Impossibile analizzare. Avvicinati.",
+                retryBtn: "Riprova",
+                diagnosisTitle: "⚠️ Diagnosi",
+                problemLabel: "Problema:",
+                causeLabel: "Causa:",
+                healthStatusLabel: "Stato di Salute",
+                carePlanTitle: "📝 Piano di Cura",
+                analyzeAnotherBtn: "📷 Analizza un'Altra",
+                premiumBtnBase: "Abbonamento Premium",
+                premiumSuccess: "Premium Confermato!"
+            },
+            "zh": {
+                identify: "🌿 识别",
+                diagnose: "🩺 诊断疾病",
+                captureBtn: "📸 分析植物",
+                loading: "咨询专家中...",
+                errorMsg: "无法分析。请靠近一点。",
+                retryBtn: "重试",
+                diagnosisTitle: "⚠️ 诊断",
+                problemLabel: "问题:",
+                causeLabel: "原因:",
+                healthStatusLabel: "健康状况",
+                carePlanTitle: "📝 护理计划",
+                analyzeAnotherBtn: "📷 分析另一株植物",
+                premiumBtnBase: "订阅高级版",
+                premiumSuccess: "高级版已确认！"
+            },
+            "ko": {
+                identify: "🌿 식별하기",
+                diagnose: "🩺 질병 진단",
+                captureBtn: "📸 식물 분석",
+                loading: "전문가와 상담 중...",
+                errorMsg: "분석할 수 없습니다. 더 가까이 가보세요.",
+                retryBtn: "다시 시도",
+                diagnosisTitle: "⚠️ 진단",
+                problemLabel: "문제:",
+                causeLabel: "원인:",
+                healthStatusLabel: "건강 상태",
+                carePlanTitle: "📝 관리 계획",
+                analyzeAnotherBtn: "📷 다른 식물 분석",
+                premiumBtnBase: "프리미엄 구독",
+                premiumSuccess: "프리미엄 확인됨!"
+            },
+            "ja": {
+                identify: "🌿 識別する",
+                diagnose: "🩺 病気の診断",
+                captureBtn: "📸 植物を分析",
+                loading: "専門家に相談中...",
+                errorMsg: "分析できませんでした。もっと近づいてください。",
+                retryBtn: "再試行",
+                diagnosisTitle: "⚠️ 診断",
+                problemLabel: "問題:",
+                causeLabel: "原因:",
+                healthStatusLabel: "健康状態",
+                carePlanTitle: "📝 ケアプラン",
+                analyzeAnotherBtn: "📷 別の植物を分析",
+                premiumBtnBase: "プレミアム購読",
+                premiumSuccess: "プレミアム確認済み！"
+            }
+        };
+
+        // Extrai idioma da URL (Android) ou fallback
+        const urlParams = new URLSearchParams(window.location.search);
+        let userLang = urlParams.get('lang') || navigator.language.slice(0, 2);
+        
+        // Se idioma não existir no dicionário, cai pro inglês
+        if (!i18n[userLang]) {
+            userLang = 'en'; 
+        }
+        const t = i18n[userLang];
+
+        // --- TRADUÇÃO INICIAL DA TELA ---
+        document.documentElement.lang = userLang;
+        document.getElementById('lbl-identificacao').innerText = t.identify;
+        document.getElementById('lbl-diagnostico').innerText = t.diagnose;
+        document.getElementById('captureBtn').innerText = t.captureBtn;
+        document.getElementById('btn-premium').innerText = t.premiumBtnBase;
+
+        // --- LÓGICA DE ASSINATURA (COMUNICAÇÃO COM JAVA) ---
+        const btnPremium = document.getElementById('btn-premium');
+        const premiumSuccess = document.getElementById('premium-success');
+
+        window.updatePremiumPrice = function(priceString) {
+            if (btnPremium) {
+                btnPremium.innerText = t.premiumBtnBase + " " + priceString;
+            }
+        };
+
+        window.setPremiumStatus = function(isPremium) {
+            if (isPremium) {
+                if (btnPremium) btnPremium.classList.add('hidden');
+                if (premiumSuccess) {
+                    premiumSuccess.innerText = t.premiumSuccess;
+                    premiumSuccess.classList.remove('hidden');
+                }
+            }
+        };
+
+        // --- LÓGICA DE CÂMERA E ANÁLISE ---
         const video = document.getElementById("video");
         const canvas = document.getElementById("canvas");
         const ctx = canvas.getContext("2d");
@@ -73,9 +269,8 @@
                     video: { facingMode: { ideal: "environment" }, width: { ideal: 1920 }, height: { ideal: 1080 } } 
                 }); 
                 video.srcObject = stream;
-                // Só mostra o vídeo quando estiver pronto (evita tela preta/play)
                 video.onloadedmetadata = () => { video.style.opacity = 1; };
-            } catch (err) { alert("Erro ao acessar a câmera. Verifique as permissões."); } 
+            } catch (err) { alert("Camera Error."); } 
         }
 
         function resetUI() {
@@ -102,7 +297,8 @@
             canvas.style.display = 'block';
             controlsDiv.style.display = 'none';
 
-            outputPanel.innerHTML = `<div class="p-10 text-center"><p class="text-2xl animate-pulse">🍃</p><p class="mt-4 text-green-300">Consultando o especialista...</p></div>`;
+            // Loading state traduzido
+            outputPanel.innerHTML = `<div class="p-10 text-center"><p class="text-2xl animate-pulse">🍃</p><p class="mt-4 text-green-300">${t.loading}</p></div>`;
             outputPanel.style.display = 'block';
 
             try {
@@ -112,27 +308,28 @@
                 const response = await fetch('/api/analyze-plant', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ image: imageDataUrl, analysis_type }),
+                    // Envia o idioma para a API retornar os dados traduzidos
+                    body: JSON.stringify({ image: imageDataUrl, analysis_type, language: userLang }),
                 });
 
-                if (!response.ok) throw new Error(`Erro na API`);
+                if (!response.ok) throw new Error(`API Error`);
                 const data = await response.json();
                 renderResults(data);
 
             } catch (error) {
-                outputPanel.innerHTML = `<div class="p-6 text-center text-red-400"><p class="text-xl">🍂</p><p>Não consegui analisar. Tente aproximar mais.</p><button onclick="resetUI()" class="mt-4 text-sm underline">Tentar novamente</button></div>`;
+                // Erro traduzido
+                outputPanel.innerHTML = `<div class="p-6 text-center text-red-400"><p class="text-xl">🍂</p><p>${t.errorMsg}</p><button onclick="resetUI()" class="mt-4 text-sm underline">${t.retryBtn}</button></div>`;
             }
         });
 
         function renderResults(data) {
             let diagnosisHTML = '';
-            // Se tiver diagnóstico E indicar problema, mostra a caixa vermelha
-            if (data.diagnostico && data.saude.status !== 'Saudável') {
+            if (data.diagnostico && data.saude.status !== 'Saudável' && data.saude.status !== 'Healthy') {
                 diagnosisHTML = `
                     <div class="diagnosis-section">
-                        <h3 class="font-bold text-lg text-red-400 mb-2">⚠️ Diagnóstico</h3>
-                        <p class="mb-1"><strong class="text-white">Problema:</strong> ${data.diagnostico.problema}</p>
-                        <p class="mb-1"><strong class="text-white">Causa:</strong> ${data.diagnostico.causa_provavel}</p>
+                        <h3 class="font-bold text-lg text-red-400 mb-2">${t.diagnosisTitle}</h3>
+                        <p class="mb-1"><strong class="text-white">${t.problemLabel}</strong> ${data.diagnostico.problema}</p>
+                        <p class="mb-1"><strong class="text-white">${t.causeLabel}</strong> ${data.diagnostico.causa_provavel}</p>
                         <p class="text-sm opacity-80">${data.diagnostico.sintomas_visiveis}</p>
                     </div>
                 `;
@@ -145,6 +342,8 @@
                 </div>
             `).join('');
 
+            const isHealthy = (data.saude.status === 'Saudável' || data.saude.status === 'Healthy');
+
             const html = `
                 <div class="result-card">
                     <h2 class="text-3xl font-bold text-green-400 leading-tight">${data.identificacao.nome_popular}</h2>
@@ -153,22 +352,22 @@
                     <p class="mb-6 text-gray-100 leading-relaxed">${data.identificacao.descricao}</p>
                     
                     <div class="flex items-center gap-3 mb-6 bg-gray-800 p-3 rounded-lg">
-                        <div class="text-2xl">${data.saude.status === 'Saudável' ? '💚' : '🥀'}</div>
+                        <div class="text-2xl">${isHealthy ? '💚' : '🥀'}</div>
                         <div>
-                            <p class="text-xs text-gray-400 uppercase tracking-wider">Estado de Saúde</p>
-                            <p class="font-bold ${data.saude.status === 'Saudável' ? 'text-green-400' : 'text-red-400'}">${data.saude.status}</p>
+                            <p class="text-xs text-gray-400 uppercase tracking-wider">${t.healthStatusLabel}</p>
+                            <p class="font-bold ${isHealthy ? 'text-green-400' : 'text-red-400'}">${data.saude.status}</p>
                         </div>
                     </div>
 
                     ${diagnosisHTML}
 
-                    <h3 class="text-xl font-bold mt-8 mb-4 border-b border-gray-700 pb-2">📝 Plano de Cuidados</h3>
+                    <h3 class="text-xl font-bold mt-8 mb-4 border-b border-gray-700 pb-2">${t.carePlanTitle}</h3>
                     ${actionPlanHTML}
                     
                     <p class="disclaimer">${data.disclaimer}</p>
                     
                     <button onclick="resetUI()" class="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-4 rounded-full mt-2 transition-colors">
-                        📷 Analisar Outra Planta
+                        📷 ${t.analyzeAnotherBtn}
                     </button>
                 </div>
             `;
