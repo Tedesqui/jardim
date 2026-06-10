@@ -41,7 +41,6 @@
     <video id="video" autoplay playsinline muted></video>
     <canvas id="canvas"></canvas>
     
-    <!-- INTEGRAÇÃO PREMIUM - Botão flutuante no topo -->
     <div class="absolute top-4 right-4 z-50">
         <a href="jardim://assinar" id="btn-premium" class="bg-yellow-500 hover:bg-yellow-400 text-yellow-900 text-xs font-bold px-4 py-2 rounded-full shadow-lg transition-colors duration-300">
             Assinar Premium
@@ -86,7 +85,9 @@
                 carePlanTitle: "📝 Plano de Cuidados",
                 analyzeAnotherBtn: "Analisar Outra Planta",
                 premiumBtnBase: "Assinar Premium",
-                premiumSuccess: "Premium Confirmado!"
+                premiumSuccess: "Premium Confirmado!",
+                needsPremium: "Para analisar suas plantas e receber diagnósticos, por favor, assine o Premium tocando no botão no topo da tela.",
+                backBtn: "Voltar para Câmera"
             },
             "en": {
                 identify: "🌿 Identify",
@@ -102,7 +103,9 @@
                 carePlanTitle: "📝 Care Plan",
                 analyzeAnotherBtn: "Analyze Another Plant",
                 premiumBtnBase: "Subscribe Premium",
-                premiumSuccess: "Premium Confirmed!"
+                premiumSuccess: "Premium Confirmed!",
+                needsPremium: "To analyze your plants and receive diagnoses, please subscribe to Premium by tapping the button at the top.",
+                backBtn: "Back to Camera"
             },
             "es": {
                 identify: "🌿 Identificar",
@@ -118,7 +121,9 @@
                 carePlanTitle: "📝 Plan de Cuidados",
                 analyzeAnotherBtn: "Analizar Otra Planta",
                 premiumBtnBase: "Suscribirse Premium",
-                premiumSuccess: "¡Premium Confirmado!"
+                premiumSuccess: "¡Premium Confirmado!",
+                needsPremium: "Para analizar sus plantas y recibir diagnósticos, por favor suscríbase a Premium tocando el botón en la parte superior.",
+                backBtn: "Volver a la Cámara"
             },
             "de": {
                 identify: "🌿 Identifizieren",
@@ -134,7 +139,9 @@
                 carePlanTitle: "📝 Pflegeplan",
                 analyzeAnotherBtn: "Andere Pflanze",
                 premiumBtnBase: "Premium Abonnieren",
-                premiumSuccess: "Premium Bestätigt!"
+                premiumSuccess: "Premium Bestätigt!",
+                needsPremium: "Um Ihre Pflanzen zu analysieren und Diagnosen zu erhalten, abonnieren Sie bitte Premium, indem Sie auf die Schaltfläche oben tippen.",
+                backBtn: "Zurück zur Kamera"
             },
             "fr": {
                 identify: "🌿 Identifier",
@@ -150,7 +157,9 @@
                 carePlanTitle: "📝 Plan de Soins",
                 analyzeAnotherBtn: "Analyser une Autre",
                 premiumBtnBase: "S'abonner Premium",
-                premiumSuccess: "Premium Confirmé!"
+                premiumSuccess: "Premium Confirmé!",
+                needsPremium: "Pour analyser vos plantes et recevoir des diagnostics, veuillez vous abonner à Premium en appuyant sur le bouton en haut.",
+                backBtn: "Retour à la Caméra"
             },
             "it": {
                 identify: "🌿 Identifica",
@@ -166,7 +175,9 @@
                 carePlanTitle: "📝 Piano di Cura",
                 analyzeAnotherBtn: "Analizza un'Altra",
                 premiumBtnBase: "Abbonamento Premium",
-                premiumSuccess: "Premium Confermato!"
+                premiumSuccess: "Premium Confermato!",
+                needsPremium: "Per analizzare le tue piante e ricevere diagnosi, abbonati a Premium toccando il pulsante in alto.",
+                backBtn: "Torna alla Fotocamera"
             },
             "zh": {
                 identify: "🌿 识别",
@@ -182,7 +193,9 @@
                 carePlanTitle: "📝 护理计划",
                 analyzeAnotherBtn: "分析另一株植物",
                 premiumBtnBase: "订阅高级版",
-                premiumSuccess: "高级版已确认！"
+                premiumSuccess: "高级版已确认！",
+                needsPremium: "要分析您的植物并获取诊断，请点击顶部的按钮订阅高级版。",
+                backBtn: "返回相机"
             },
             "ko": {
                 identify: "🌿 식별하기",
@@ -198,7 +211,9 @@
                 carePlanTitle: "📝 관리 계획",
                 analyzeAnotherBtn: "다른 식물 분석",
                 premiumBtnBase: "프리미엄 구독",
-                premiumSuccess: "프리미엄 확인됨!"
+                premiumSuccess: "프리미엄 확인됨!",
+                needsPremium: "식물을 분석하고 진단을 받으려면 상단의 버튼을 탭하여 프리미엄을 구독하세요.",
+                backBtn: "카메라로 돌아가기"
             },
             "ja": {
                 identify: "🌿 識別する",
@@ -214,7 +229,9 @@
                 carePlanTitle: "📝 ケアプラン",
                 analyzeAnotherBtn: "別の植物を分析",
                 premiumBtnBase: "プレミアム購読",
-                premiumSuccess: "プレミアム確認済み！"
+                premiumSuccess: "プレミアム確認済み！",
+                needsPremium: "植物を分析して診断を受け取るには、上部のボタンをタップしてプレミアムを購読してください。",
+                backBtn: "カメラに戻る"
             }
         };
 
@@ -232,8 +249,11 @@
         document.documentElement.lang = userLang;
         document.getElementById('lbl-identificacao').innerText = t.identify;
         document.getElementById('lbl-diagnostico').innerText = t.diagnose;
-        document.getElementById('captureBtn').innerText = t.captureBtn;
+        document.getElementById('captureBtn').innerText = `📸 ${t.captureBtn}`;
         document.getElementById('btn-premium').innerText = t.premiumBtnBase;
+
+        // --- VARIÁVEL DE CONTROLE PREMIUM ---
+        let isUserPremium = false;
 
         // --- LÓGICA DE ASSINATURA (COMUNICAÇÃO COM JAVA) ---
         const btnPremium = document.getElementById('btn-premium');
@@ -246,6 +266,7 @@
         };
 
         window.setPremiumStatus = function(isPremium) {
+            isUserPremium = isPremium; // Salva o status do usuário
             if (isPremium) {
                 if (btnPremium) btnPremium.classList.add('hidden');
                 if (premiumSuccess) {
@@ -286,6 +307,28 @@
         captureBtn.addEventListener('click', async () => {
             captureBtn.disabled = true;
             
+            // --- BLOQUEIO PREMIUM ---
+            // Se o usuário NÃO for premium, impede a foto e mostra o aviso
+            if (!isUserPremium) {
+                video.style.opacity = 0;
+                setTimeout(() => { video.style.display = 'none'; }, 300);
+                controlsDiv.style.display = 'none';
+
+                outputPanel.innerHTML = `
+                    <div class="p-8 text-center mt-10">
+                        <p class="text-5xl mb-4">⭐</p>
+                        <h3 class="font-bold text-xl text-yellow-400 mb-3">${t.premiumBtnBase}</h3>
+                        <p class="text-md text-gray-200 leading-relaxed mb-8">${t.needsPremium}</p>
+                        <button onclick="resetUI()" class="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-4 rounded-full transition-colors">
+                            🔙 ${t.backBtn}
+                        </button>
+                    </div>
+                `;
+                outputPanel.style.display = 'block';
+                return; // Interrompe o código aqui, a API não será chamada.
+            }
+            // ------------------------
+
             const MAX_WIDTH = 1024;
             const scale = MAX_WIDTH / video.videoWidth;
             canvas.width = MAX_WIDTH;
@@ -308,7 +351,6 @@
                 const response = await fetch('/api/analyze-plant', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    // Envia o idioma para a API retornar os dados traduzidos
                     body: JSON.stringify({ image: imageDataUrl, analysis_type, language: userLang }),
                 });
 
@@ -366,9 +408,9 @@
                     
                     <p class="disclaimer">${data.disclaimer}</p>
                     
-<button onclick="resetUI()" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-full mt-2 transition-colors">
-    📸 ${t.analyzeAnotherBtn}
-</button>
+                    <button onclick="resetUI()" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-full mt-2 transition-colors">
+                        📸 ${t.analyzeAnotherBtn}
+                    </button>
                 </div>
             `;
             
