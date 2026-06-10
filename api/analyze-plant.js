@@ -1,8 +1,6 @@
-import OpenAI from 'openai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // Mapa de idiomas suportados
 const languageMap = {
@@ -16,6 +14,20 @@ const languageMap = {
     "ko": "Coreano",
     "ja": "Japonês"
 };
+
+// Função auxiliar para converter a Data URL do frontend para o formato aceito pelo Gemini
+function fileToGenerativePart(dataUrl) {
+    const matches = dataUrl.match(/^data:(.+);base64,(.+)$/);
+    if (!matches) {
+        throw new Error('Formato de imagem inválido.');
+    }
+    return {
+        inlineData: {
+            data: matches[2],
+            mimeType: matches[1]
+        },
+    };
+}
 
 export default async function handler(request, response) {
     try {
@@ -85,22 +97,20 @@ export default async function handler(request, response) {
         }
         `;
 
-        const completion = await openai.chat.completions.create({
-            model: "gpt-4o",
-            response_format: { type: "json_object" },
-            messages: [
-                {
-                    role: "user",
-                    content: [
-                        { type: "text", text: prompt },
-                        { type: "image_url", image_url: { "url": image } },
-                    ],
-                },
-            ],
-            max_tokens: 2000,
+        // Prepara o payload da imagem
+        const imagePart = fileToGenerativePart(image);
+
+        // Inicializa o modelo gemini-1.5-flash (ideal para respostas de visão rápidas e precisas)
+        const model = genAI.getGenerativeModel({ 
+            model: "gemini-1.5-flash",
+            generationConfig: { responseMimeType: "application/json" }
         });
 
-        const aiResultString = completion.choices[0].message.content;
+        // Executa a chamada passando o prompt e a estrutura de imagem
+        const result = await model.generateContent([prompt, imagePart]);
+        const aiResponse = await result.response;
+        const aiResultString = aiResponse.text();
+
         const parsedResult = JSON.parse(aiResultString);
         return response.status(200).json(parsedResult);
 
