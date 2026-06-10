@@ -102,7 +102,7 @@ export default async function handler(request, response) {
 
         // Inicializa o modelo gemini-1.5-flash (ideal para respostas de visão rápidas e precisas)
         const model = genAI.getGenerativeModel({ 
-            model: "gemini-1.5-flash",
+            model: "gemini-2.5-flash",
             generationConfig: { responseMimeType: "application/json" }
         });
 
