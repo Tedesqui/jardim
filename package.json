@@ -1,9 +1,9 @@
 {
-    "name": "jardineiro-ai-backend",
+    "name": "reverse-recipe-ai-backend",
     "version": "1.0.0",
     "private": true,
-    "description": "Backend para o 'Médico' de Plantas e Mentor de Jardinagem com IA",
+    "description": "Backend para o Chef com IA - Receita Reversa",
     "dependencies": {
-        "@google/generative-ai": "gemini-2.5-flash"
+        "@google/generative-ai": "latest"
     }
 }
